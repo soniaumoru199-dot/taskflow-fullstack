@@ -22,8 +22,7 @@ app.get("/", (req, res) => {
     message: "TaskFlow API is running",
   });
 });
-
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`TaskFlow server running on http://localhost:${PORT}`);
