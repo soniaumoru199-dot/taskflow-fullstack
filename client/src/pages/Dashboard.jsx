@@ -7,7 +7,7 @@ function Dashboard() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-  fetch("http://localhost:5000/api/tasks")
+  fetch("https://taskflow-api-47we.onrender.com/api/tasks")
     .then((response) => response.json())
     .then((data) => {
       setTasks(data);
@@ -136,7 +136,7 @@ function Dashboard() {
                  if (!newTask.trim()) return;
 
                  try {
-                   const response = await fetch("http://localhost:5000/api/tasks", {
+                   const response = await fetch("https://taskflow-api-47we.onrender.com/api/tasks", {
                      method: "POST",
                      headers: {
                        "Content-Type": "application/json",
@@ -226,7 +226,7 @@ function Dashboard() {
     onClick={async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/tasks/${task.id}`,
+          `https://taskflow-api-47we.onrender.com/api/tasks/${task.id}`,
           {
             method: "PATCH",
             headers: {
@@ -263,7 +263,7 @@ function Dashboard() {
   onClick={async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/tasks/${task.id}`,
+      `https://taskflow-api-47we.onrender.com/api/tasks/${task.id}`,
         {
           method: "DELETE",
         }
