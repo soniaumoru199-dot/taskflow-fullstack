@@ -82,6 +82,51 @@ app.post("/api/register", (req, res) => {
   });
 });
 
+// Login
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      message: "Email and password are required",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  const user = db
+    .prepare(
+      "SELECT id, name, email, password_hash FROM users WHERE email = ?"
+    )
+    .get(cleanEmail);
+
+  if (!user) {
+    return res.status(401).json({
+      message: "Invalid email or password",
+    });
+  }
+
+  const passwordHash = crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+
+  if (passwordHash !== user.password_hash) {
+    return res.status(401).json({
+      message: "Invalid email or password",
+    });
+  }
+
+  res.json({
+    message: "Login successful",
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    },
+  });
+});
+
 // Get all tasks
 app.get("/api/tasks", (req, res) => {
   const tasks = db
