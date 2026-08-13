@@ -1,11 +1,16 @@
+console.log("REGISTER VERSION LOADED");
 const Database = require("better-sqlite3");
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 
 const db = new Database("taskflow.db");
-
 const app = express();
 
+app.use(cors());
+app.use(express.json());
+
+// Create tasks table
 db.exec(`
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,38 +19,70 @@ db.exec(`
   )
 `);
 
-app.use(cors());
-app.use(express.json());
+// Create users table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL
+  )
+`);
 
+// Home route
 app.get("/", (req, res) => {
   res.json({
     message: "TaskFlow API is running",
   });
 });
-const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`TaskFlow server running on http://localhost:${PORT}`);
+// Register a new user
+app.post("/api/register", (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      message: "Name, email, and password are required",
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters",
+    });
+  }
+
+  const cleanName = name.trim();
+  const cleanEmail = email.trim().toLowerCase();
+
+  const existingUser = db
+    .prepare("SELECT id FROM users WHERE email = ?")
+    .get(cleanEmail);
+
+  if (existingUser) {
+    return res.status(409).json({
+      message: "An account with that email already exists",
+    });
+  }
+
+  const passwordHash = crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+
+  const result = db
+    .prepare(
+      "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)"
+    )
+    .run(cleanName, cleanEmail, passwordHash);
+
+  res.status(201).json({
+    message: "Account created successfully",
+    userId: result.lastInsertRowid,
+  });
 });
 
-let tasks = [
-  {
-    id: 1,
-    title: "Build TaskFlow frontend",
-    status: "Completed",
-  },
-  {
-    id: 2,
-    title: "Create Node.js backend",
-    status: "In Progress",
-  },
-  {
-    id: 3,
-    title: "Deploy TaskFlow",
-    status: "Pending",
-  },
-];
-
+// Get all tasks
 app.get("/api/tasks", (req, res) => {
   const tasks = db
     .prepare("SELECT * FROM tasks ORDER BY id ASC")
@@ -54,6 +91,7 @@ app.get("/api/tasks", (req, res) => {
   res.json(tasks);
 });
 
+// Create a task
 app.post("/api/tasks", (req, res) => {
   const { title } = req.body;
 
@@ -64,7 +102,9 @@ app.post("/api/tasks", (req, res) => {
   }
 
   const result = db
-    .prepare("INSERT INTO tasks (title, status) VALUES (?, ?)")
+    .prepare(
+      "INSERT INTO tasks (title, status) VALUES (?, ?)"
+    )
     .run(title.trim(), "Pending");
 
   const newTask = db
@@ -74,6 +114,7 @@ app.post("/api/tasks", (req, res) => {
   res.status(201).json(newTask);
 });
 
+// Update a task
 app.patch("/api/tasks/:id", (req, res) => {
   const taskId = Number(req.params.id);
   const { status } = req.body;
@@ -99,6 +140,7 @@ app.patch("/api/tasks/:id", (req, res) => {
   res.json(updatedTask);
 });
 
+// Delete a task
 app.delete("/api/tasks/:id", (req, res) => {
   const taskId = Number(req.params.id);
 
@@ -119,4 +161,11 @@ app.delete("/api/tasks/:id", (req, res) => {
   res.json({
     message: "Task deleted successfully",
   });
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`TaskFlow server running on http://localhost:${PORT}`);
 });

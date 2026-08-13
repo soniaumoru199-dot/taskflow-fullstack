@@ -1,8 +1,51 @@
+import { useState } from "react";
+
 function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setMessage("");
+    setError("");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Registration failed");
+        return;
+      }
+
+      setMessage(data.message);
+      setName("");
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      setError("Unable to connect to the server");
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl">
-        <h1 className="mb-2 text-center text-3xl font-bold text-blue-600">
+    <div className="min-h-screen bg-gray-50 px-4 py-12">
+      <div className="mx-auto max-w-md rounded-xl bg-white p-8 shadow">
+        <h1 className="mb-2 text-center text-2xl font-bold">
           Create Account
         </h1>
 
@@ -10,7 +53,19 @@ function Register() {
           Create your TaskFlow account
         </p>
 
-        <form className="space-y-4">
+        {message && (
+          <div className="mb-4 rounded-lg bg-green-100 p-3 text-green-700">
+            {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="mb-1 block text-sm font-medium">
               Name
@@ -19,7 +74,10 @@ function Register() {
             <input
               type="text"
               placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border p-3 focus:border-blue-500 focus:outline-none"
+              required
             />
           </div>
 
@@ -31,7 +89,10 @@ function Register() {
             <input
               type="email"
               placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border p-3 focus:border-blue-500 focus:outline-none"
+              required
             />
           </div>
 
@@ -43,7 +104,10 @@ function Register() {
             <input
               type="password"
               placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border p-3 focus:border-blue-500 focus:outline-none"
+              required
             />
           </div>
 
